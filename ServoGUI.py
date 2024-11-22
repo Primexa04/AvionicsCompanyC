@@ -64,11 +64,10 @@ slider_vtp.grid(row=7, column=1, padx=5, pady=5)
 
 # Variable to track the current mode
 rcs_mode = True  # Start in RCS mode (using RC control)
-previous_rc_channel_value = 0  # Initialize previous channel value
 
 # Main loop to check RC channels and switch modes
 def check_rc():
-    global rcs_mode, previous_rc_channel_value
+    global rcs_mode
     msg = master.recv_match(type='RC_CHANNELS', blocking=True)
     
     if msg:
@@ -76,22 +75,15 @@ def check_rc():
         rc_channel_value = msg.chan8_raw
 
         # Check if the RC channel value crosses the threshold to switch modes
-        if rc_channel_value == 0 and previous_rc_channel_value != 0:
-            if rcs_mode:
-                print("Switching to TMS Mode")
-                rcs_mode = False  # Switch to TMS mode (use code control)
-            else:
-                print("Already in TMS Mode")
+        if rc_channel_value == 0:
+            print("Switching to TMS Mode")
+            rcs_mode = False  # Switch to TMS mode (use code control)
+
         
-        elif rc_channel_value == -100 and previous_rc_channel_value != -100:
-            if not rcs_mode:
-                print("Switching back to RCS Mode")
-                rcs_mode = True  # Switch back to RCS mode (use RC control)
-            else:
-                print("Already in RCS Mode")
-        
-        # Update the previous channel value to the current one for next comparison
-        previous_rc_channel_value = rc_channel_value
+        elif rc_channel_value == -100:
+            print("Switching back to RCS Mode")
+            rcs_mode = True  # Switch back to RCS mode (use RC control)
+
 
         # Handle servo control based on the current mode
         if rcs_mode:
