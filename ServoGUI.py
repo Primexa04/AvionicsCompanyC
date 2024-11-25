@@ -9,7 +9,7 @@ def connect_mavlink():
 # Initialize MAVLink connection
 master = connect_mavlink()
 print("Waiting for MAVLink heartbeat...")
-#master.wait_heartbeat()
+master.wait_heartbeat()
 print("Heartbeat received. Connected to the Cubepilot.")
 
 # Function to convert angle to PWM (assuming 800-2200 range)
@@ -54,6 +54,9 @@ def switch_rc():
         print("RC mode OFF")
         
     time.sleep(0.1)
+    
+    
+rc_state = True
 
 # Set up Tkinter UI
 root = tk.Tk()
@@ -91,7 +94,8 @@ slider_vtp = tk.Scale(root, from_=-40, to=40, orient=tk.HORIZONTAL,
                       command=lambda val: set_servo_angle(4, int(val), -40, 40))
 slider_vtp.grid(row=7, column=1, padx=5, pady=5)
 
-rc_state = True
+# Run the Tkinter main loop
+root.mainloop()
 
 while True: 
     if rc_state == True:
@@ -106,5 +110,3 @@ while True:
     time.sleep(0.1)
 
 
-# Run the Tkinter main loop
-root.mainloop()
