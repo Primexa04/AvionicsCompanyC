@@ -4,13 +4,13 @@ import tkinter as tk
 
 # Function to establish MAVLink connection
 def connect_mavlink():
-    return mavutil.mavlink_connection('COM4')  # Adjust COM port as needed
+    return mavutil.mavlink_connection('udpin:0.0.0.0:14550')  # Adjust COM port as needed
 
 # Initialize MAVLink connection
 master = connect_mavlink()
 print("Waiting for MAVLink heartbeat...")
-master.wait_heartbeat()
-print("Heartbeat received. Connected to the autopilot.")
+#master.wait_heartbeat()
+print("Heartbeat received. Connected to the Cubepilot.")
 
 # Function to convert angle to PWM (assuming 800-2200 range)
 def angle_to_pwm(angle, min_angle, max_angle):
@@ -27,9 +27,38 @@ def set_servo_angle(servo_n, angle, min_angle, max_angle):
     )
     print(f"Servo {servo_n} set to {angle} degrees (PWM: {pwm_value})")
 
+def set_servo_function(servo_number, function_value):
+    param_name = f"SERVO{servo_number}_FUNCTION"
+
+    # Send PARAM_SET command
+    master.mav.param_set_send(
+        master.target_system, 
+        master.target_component,
+        param_name.encode('utf-8'),
+        float(function_value),  # Parameter value as a float
+        mavutil.mavlink.MAV_PARAM_TYPE_INT32  # Type of the parameter
+    )
+    
+    
+def switch_rc():
+    global rc_state
+    msg = master.recv_match(type='RC_CHANNELS', blocking=True)
+    rc_channel_value = msg.chan8_raw
+    print("RC Switch value is:", rc_channel_value)
+    
+    if rc_channel_value == 982: 
+        rc_state =  True
+        print("RC mode ON")
+    elif rc_channel_value == 1495: 
+        rc_state = False
+        print("RC mode OFF")
+        
+    time.sleep(0.1)
+
 # Set up Tkinter UI
 root = tk.Tk()
 root.title("Servo Angle Controller")
+
 
 # Labels and Sliders for each servo with real-time updates
 tk.Label(root, text="Port Flaps Angle (Open to Closed):").grid(row=2, column=0, padx=5, pady=5)
@@ -62,51 +91,20 @@ slider_vtp = tk.Scale(root, from_=-40, to=40, orient=tk.HORIZONTAL,
                       command=lambda val: set_servo_angle(4, int(val), -40, 40))
 slider_vtp.grid(row=7, column=1, padx=5, pady=5)
 
-# Variable to track the current mode
-rcs_mode = True  # Start in RCS mode (using RC control)
+rc_state = True
 
-# Main loop to check RC channels and switch modes
-def check_rc():
-    global rcs_mode
-    msg = master.recv_match(type='RC_CHANNELS', blocking=True)
+while True: 
+    if rc_state == True:
+        set_servo_function(1,1)
+        set_servo_function(2,2)
+        set_servo_function(4,4)
+    elif rc_state == False: 
+        set_servo_function(1,0)
+        set_servo_function(2,0)
+        set_servo_function(4,0)
     
-    if msg:
-        # Get the value of channel 8 (or other channel you want to use for mode switching)
-        rc_channel_value = msg.chan8_raw
+    time.sleep(0.1)
 
-        # Check if the RC channel value crosses the threshold to switch modes
-        if rc_channel_value == 0:
-            print("Switching to TMS Mode")
-            rcs_mode = False  # Switch to TMS mode (use code control)
-
-        
-        elif rc_channel_value == -100:
-            print("Switching back to RCS Mode")
-            rcs_mode = True  # Switch back to RCS mode (use RC control)
-
-
-        # Handle servo control based on the current mode
-        if rcs_mode:
-            # In RCS mode, use RC channels to control servos
-            set_servo_angle(1, msg.chan1_raw, 0, 120)  # Channel 1 (Port Aileron)
-            set_servo_angle(2, msg.chan2_raw, 0, 30)   # Channel 2 (Elevator)
-            set_servo_angle(4, msg.chan4_raw, 0, 30)   # Channel 4 (Rudder)
-            
-        else:
-            # In TMS mode, use code control (e.g., Tkinter sliders)
-            pass
-
-# Start checking RC channels and handling mode switching
-def start_rc_check():
-    while True:
-        check_rc()
-        time.sleep(0.1)  # Adjust sleep time as needed
-
-# Run the Tkinter main loop in a separate thread for GUI responsiveness
-import threading
-thread = threading.Thread(target=start_rc_check)
-thread.daemon = True  # Make sure the thread stops when the program ends
-thread.start()
 
 # Run the Tkinter main loop
 root.mainloop()
