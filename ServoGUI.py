@@ -49,27 +49,27 @@ slider_port_aileron.grid(row=0, column=1)
 
 tk.Label(control_frame, text="Starboard Aileron (-30 to +30):").grid(row=1, column=0, padx=5, pady=5)
 slider_starboard_aileron = tk.Scale(control_frame, from_=-30, to=30, orient=tk.HORIZONTAL,
-                                    command=lambda val: set_servo_angle(2, int(val), -30, 30))
+                                    command=lambda val: set_servo_angle(8, int(val), -30, 30))
 slider_starboard_aileron.grid(row=1, column=1)
 
 tk.Label(control_frame, text="Port Flap (0 to +30):").grid(row=2, column=0, padx=5, pady=5)
 slider_port_flap = tk.Scale(control_frame, from_=0, to=30, resolution=10, orient=tk.HORIZONTAL,
-                            command=lambda val: set_servo_angle(3, int(val), 0, 30))
+                            command=lambda val: set_servo_angle(7, int(val), 0, 30))
 slider_port_flap.grid(row=2, column=1)
 
 tk.Label(control_frame, text="Starboard Flap (0 to +30):").grid(row=3, column=0, padx=5, pady=5)
 slider_starboard_flap = tk.Scale(control_frame, from_=0, to=30, resolution=10, orient=tk.HORIZONTAL,
-                                 command=lambda val: set_servo_angle(4, int(val), 0, 30))
+                                 command=lambda val: set_servo_angle(8, int(val), 0, 30))
 slider_starboard_flap.grid(row=3, column=1)
 
 tk.Label(control_frame, text="Elevator (-45 to +45):").grid(row=4, column=0, padx=5, pady=5)
 slider_elevator = tk.Scale(control_frame, from_=-45, to=45, orient=tk.HORIZONTAL,
-                           command=lambda val: set_servo_angle(5, int(val), -45, 45))
+                           command=lambda val: set_servo_angle(2, int(val), -45, 45))
 slider_elevator.grid(row=4, column=1)
 
 tk.Label(control_frame, text="Rudder (-40 to +40):").grid(row=5, column=0, padx=5, pady=5)
 slider_rudder = tk.Scale(control_frame, from_=-40, to=40, orient=tk.HORIZONTAL,
-                         command=lambda val: set_servo_angle(6, int(val), -40, 40))
+                         command=lambda val: set_servo_angle(4, int(val), -40, 40))
 slider_rudder.grid(row=5, column=1)
 
 # Angle display section
