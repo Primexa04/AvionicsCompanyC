@@ -1,4 +1,5 @@
 import time
+import csv
 from pymavlink import mavutil
 import tkinter as tk
 
@@ -11,6 +12,15 @@ master = connect_mavlink()
 print("Waiting for MAVLink heartbeat...")
 #master.wait_heartbeat()
 print("Heartbeat received. Connected to the CubePilot.")
+
+# Initialize CSV logging
+log_file = "servo_attitude_log.csv"
+with open(log_file, mode="w", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerow(["Time", "Port Aileron", "Starboard Aileron", "Port Flap",
+                     "Starboard Flap", "Elevator", "Rudder", "Roll", "Pitch", "Yaw"])
+
+print(f"Logging to {log_file}")
 
 # Function to calculate PWM from angle, centered at 1500
 def angle_to_pwm(angle, min_angle, max_angle):
@@ -40,68 +50,69 @@ control_frame = tk.Frame(root, padx=10, pady=10, relief=tk.RAISED, borderwidth=2
 control_frame.grid(row=0, column=0, sticky="nsew")
 display_frame = tk.Frame(root, padx=10, pady=10, relief=tk.RAISED, borderwidth=2)
 display_frame.grid(row=0, column=1, sticky="nsew")
+attitude_frame = tk.Frame(root, padx=10, pady=10, relief=tk.RAISED, borderwidth=2)
+attitude_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
 
 # Labels and sliders for control surfaces
-tk.Label(control_frame, text="Port Aileron (-30 to +30):").grid(row=0, column=0, padx=5, pady=5)
-slider_port_aileron = tk.Scale(control_frame, from_=-30, to=30, orient=tk.HORIZONTAL,
-                               command=lambda val: set_servo_angle(1, int(val), -30, 30))
-slider_port_aileron.grid(row=0, column=1)
+sliders = {
+    "Port Aileron": tk.Scale(control_frame, from_=-30, to=30, orient=tk.HORIZONTAL,
+                             command=lambda val: set_servo_angle(1, int(val), -30, 30)),
+    "Starboard Aileron": tk.Scale(control_frame, from_=-30, to=30, orient=tk.HORIZONTAL,
+                                  command=lambda val: set_servo_angle(8, int(val), -30, 30)),
+    "Port Flap": tk.Scale(control_frame, from_=0, to=30, resolution=10, orient=tk.HORIZONTAL,
+                          command=lambda val: set_servo_angle(7, int(val), 0, 30)),
+    "Starboard Flap": tk.Scale(control_frame, from_=0, to=30, resolution=10, orient=tk.HORIZONTAL,
+                               command=lambda val: set_servo_angle(8, int(val), 0, 30)),
+    "Elevator": tk.Scale(control_frame, from_=-45, to=45, orient=tk.HORIZONTAL,
+                         command=lambda val: set_servo_angle(2, int(val), -45, 45)),
+    "Rudder": tk.Scale(control_frame, from_=-40, to=40, orient=tk.HORIZONTAL,
+                       command=lambda val: set_servo_angle(4, int(val), -40, 40))
+}
 
-tk.Label(control_frame, text="Starboard Aileron (-30 to +30):").grid(row=1, column=0, padx=5, pady=5)
-slider_starboard_aileron = tk.Scale(control_frame, from_=-30, to=30, orient=tk.HORIZONTAL,
-                                    command=lambda val: set_servo_angle(8, int(val), -30, 30))
-slider_starboard_aileron.grid(row=1, column=1)
-
-tk.Label(control_frame, text="Port Flap (0 to +30):").grid(row=2, column=0, padx=5, pady=5)
-slider_port_flap = tk.Scale(control_frame, from_=0, to=30, resolution=10, orient=tk.HORIZONTAL,
-                            command=lambda val: set_servo_angle(7, int(val), 0, 30))
-slider_port_flap.grid(row=2, column=1)
-
-tk.Label(control_frame, text="Starboard Flap (0 to +30):").grid(row=3, column=0, padx=5, pady=5)
-slider_starboard_flap = tk.Scale(control_frame, from_=0, to=30, resolution=10, orient=tk.HORIZONTAL,
-                                 command=lambda val: set_servo_angle(8, int(val), 0, 30))
-slider_starboard_flap.grid(row=3, column=1)
-
-tk.Label(control_frame, text="Elevator (-45 to +45):").grid(row=4, column=0, padx=5, pady=5)
-slider_elevator = tk.Scale(control_frame, from_=-45, to=45, orient=tk.HORIZONTAL,
-                           command=lambda val: set_servo_angle(2, int(val), -45, 45))
-slider_elevator.grid(row=4, column=1)
-
-tk.Label(control_frame, text="Rudder (-40 to +40):").grid(row=5, column=0, padx=5, pady=5)
-slider_rudder = tk.Scale(control_frame, from_=-40, to=40, orient=tk.HORIZONTAL,
-                         command=lambda val: set_servo_angle(4, int(val), -40, 40))
-slider_rudder.grid(row=5, column=1)
+for i, (label, slider) in enumerate(sliders.items()):
+    tk.Label(control_frame, text=f"{label} ({slider['from']} to {slider['to']}):").grid(row=i, column=0, padx=5, pady=5)
+    slider.grid(row=i, column=1)
 
 # Angle display section
 tk.Label(display_frame, text="Control Surface Angles", font=("Helvetica", 14, "bold")).pack()
-tk.Label(display_frame, text="").pack()  # Spacer
-
-angle_vars = {
-    "Port Aileron": tk.StringVar(value="0°"),
-    "Starboard Aileron": tk.StringVar(value="0°"),
-    "Port Flap": tk.StringVar(value="0°"),
-    "Starboard Flap": tk.StringVar(value="0°"),
-    "Elevator": tk.StringVar(value="0°"),
-    "Rudder": tk.StringVar(value="0°"),
-}
-
+angle_vars = {key: tk.StringVar(value="0°") for key in sliders.keys()}
 for surface, var in angle_vars.items():
     frame = tk.Frame(display_frame, padx=5, pady=2)
     frame.pack(fill="x")
     tk.Label(frame, text=surface, width=15, anchor="w").pack(side="left")
     tk.Label(frame, textvariable=var, anchor="e", width=10).pack(side="right")
 
-def update_angles():
-    angle_vars["Port Aileron"].set(f"{slider_port_aileron.get()}°")
-    angle_vars["Starboard Aileron"].set(f"{slider_starboard_aileron.get()}°")
-    angle_vars["Port Flap"].set(f"{slider_port_flap.get()}°")
-    angle_vars["Starboard Flap"].set(f"{slider_starboard_flap.get()}°")
-    angle_vars["Elevator"].set(f"{slider_elevator.get()}°")
-    angle_vars["Rudder"].set(f"{slider_rudder.get()}°")
-    root.after(100, update_angles)
+# Attitude display section
+tk.Label(attitude_frame, text="Attitude Data", font=("Helvetica", 14, "bold")).pack()
+attitude_vars = {
+    "Roll": tk.StringVar(value="0°"),
+    "Pitch": tk.StringVar(value="0°"),
+    "Yaw": tk.StringVar(value="0°"),
+}
+for attitude, var in attitude_vars.items():
+    frame = tk.Frame(attitude_frame, padx=5, pady=2)
+    frame.pack(fill="x")
+    tk.Label(frame, text=attitude, width=15, anchor="w").pack(side="left")
+    tk.Label(frame, textvariable=var, anchor="e", width=10).pack(side="right")
 
-# Start updating angles in the display
-update_angles()
+# Logging data to CSV
+def log_data():
+    current_time = time.time()
+    data = [current_time]
+    data += [slider.get() for slider in sliders.values()]
+    msg = master.recv_match(type='ATTITUDE', blocking=False)
+    if msg:
+        data += [msg.roll * (180 / 3.14159), msg.pitch * (180 / 3.14159), msg.yaw * (180 / 3.14159)]
+        attitude_vars["Roll"].set(f"{msg.roll * (180 / 3.14159):.1f}°")
+        attitude_vars["Pitch"].set(f"{msg.pitch * (180 / 3.14159):.1f}°")
+        attitude_vars["Yaw"].set(f"{msg.yaw * (180 / 3.14159):.1f}°")
+    else:
+        data += [None, None, None]
+    with open(log_file, mode="a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(data)
+    root.after(50, log_data)  # 50 ms = 20 Hz
 
-# Run the Tkinter main loop
+# Start logging and updating GUI
+log_data()
 root.mainloop()
