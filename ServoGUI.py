@@ -41,6 +41,25 @@ def set_servo_angle(servo_n, angle, min_angle, max_angle):
     )
     print(f"Servo {servo_n} set to {angle} degrees (PWM: {pwm_value})")
 
+# Function to arm/disarm the Cube
+def toggle_arm_disarm():
+    try:
+        # Get the current arm state
+        arm_state = master.motors_armed()
+        # Toggle arm/disarm
+        master.mav.command_long_send(
+            master.target_system, master.target_component,
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            0,  # Confirmation
+            not arm_state,  # 1 to arm, 0 to disarm
+            0, 0, 0, 0, 0, 0  # Unused parameters
+        )
+        state_str = "Armed" if not arm_state else "Disarmed"
+        print(f"Cube {state_str}.")
+        arm_button.config(text=f"{state_str} (Click to toggle)", bg=("green" if not arm_state else "red"))
+    except Exception as e:
+        print(f"Error toggling arm/disarm: {e}")
+
 # Update UI and logic for sliders and displays
 root = tk.Tk()
 root.title("Servo Angle Controller")
@@ -81,6 +100,10 @@ for surface, var in angle_vars.items():
     frame.pack(fill="x")
     tk.Label(frame, text=surface, width=15, anchor="w").pack(side="left")
     tk.Label(frame, textvariable=var, anchor="e", width=10).pack(side="right")
+
+# Add Arm/Disarm button under the live servo positions window
+arm_button = tk.Button(display_frame, text="Disarmed (Click to toggle)", command=toggle_arm_disarm, bg="red", fg="white")
+arm_button.pack(pady=10)  # Pack the button below live servo positions
 
 # Attitude display section
 tk.Label(attitude_frame, text="Attitude Data", font=("Helvetica", 14, "bold")).pack()
