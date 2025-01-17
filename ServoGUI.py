@@ -10,7 +10,7 @@ def connect_mavlink():
 # Initialize MAVLink connection
 master = connect_mavlink()
 print("Waiting for MAVLink heartbeat...")
-#master.wait_heartbeat()
+master.wait_heartbeat()
 print("Heartbeat received. Connected to the CubePilot.")
 
 # Initialize CSV logging
