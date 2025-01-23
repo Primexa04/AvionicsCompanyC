@@ -41,7 +41,28 @@ def set_servo_angle(servo_n, angle, min_angle, max_angle):
     )
     print(f"Servo {servo_n} set to {angle} degrees (PWM: {pwm_value})")
 
-# Function to arm/disarm the Cube
+# Function to toggle the safety switch
+def toggle_safety_switch(activate):
+    """
+    Toggles the safety switch.
+    :param activate: True to deactivate safety (enable outputs), False to activate safety (disable outputs)
+    """
+    try:
+        # Send the MAV_CMD_COMPONENT_ARM_DISARM command for the safety switch
+        master.mav.command_long_send(
+            master.target_system,
+            master.target_component,
+            mavutil.mavlink.MAV_CMD_DO_SET_ACTUATOR,  # Command to toggle safety
+            0,  # Confirmation
+            0, 0, 0, 0,  # Params 1-4 not used
+            0 if activate else 1,  # Param 5: Safety switch state (0 = deactivated, 1 = activated)
+            0, 0  # Params 6-7 not used
+        )
+        print(f"Safety switch {'deactivated' if activate else 'activated'}.")
+    except Exception as e:
+        print(f"Error toggling safety switch: {e}")
+
+# Function to arm/disarm the Cube and toggle the safety switch
 def toggle_arm_disarm():
     try:
         # Get the current arm state
@@ -57,6 +78,9 @@ def toggle_arm_disarm():
         state_str = "Armed" if not arm_state else "Disarmed"
         print(f"Cube {state_str}.")
         arm_button.config(text=f"{state_str} (Click to toggle)", bg=("green" if not arm_state else "red"))
+
+        # After arming/disarming, toggle the safety switch
+        toggle_safety_switch(not arm_state)  # Deactivate safety when arming, activate when disarming
     except Exception as e:
         print(f"Error toggling arm/disarm: {e}")
 
