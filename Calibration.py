@@ -8,7 +8,7 @@ def connect_mavlink():
 # Initialize MAVLink connection
 master = connect_mavlink()
 print("Waiting for MAVLink heartbeat...")
-#master.wait_heartbeat()
+# master.wait_heartbeat()
 print("Heartbeat received. Connected to the CubePilot.")
 
 # Define individual PWM ranges for each servo
@@ -32,6 +32,15 @@ def set_servo_pwm(servo_n, pwm):
     )
     pwm_vars[servo_n].set(f"{pwm} µs")
 
+# Function to toggle safety switch
+def toggle_safety():
+    master.mav.command_long_send(
+        master.target_system, master.target_component,
+        mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+        0, 0, 21196, 0, 0, 0, 0, 0  # 21196 is the magic number for safety toggle
+    )
+    print("Safety switch toggled.")
+
 # GUI setup
 root = tk.Tk()
 root.title("Servo PWM Controller")
@@ -51,6 +60,10 @@ for i, (servo, (pwm_min, pwm_max)) in enumerate(servo_pwm_ranges.items()):
                       command=lambda val, s=servo: set_servo_pwm(s, int(val)))
     slider.set((pwm_min + pwm_max) // 2)  # Initialize at midpoint
     slider.pack()
+
+# Safety switch button
+safety_button = tk.Button(root, text="Toggle Safety Switch", command=toggle_safety, bg="red", fg="white")
+safety_button.pack(pady=10)
 
 # Run the GUI
 root.mainloop()
