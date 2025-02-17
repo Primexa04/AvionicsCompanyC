@@ -43,9 +43,9 @@ servo_calibrations = {
     2: {"pwm_min": 900,  "pwm_max": 1900}, #HTP
     3: {"pwm_min": 800,  "pwm_max": 2200}, #NOT IN USE
     4: {"pwm_min": 1200,  "pwm_max": 2500},#VTP
-    5: {"pwm_min": 1900,  "pwm_max": 1100},#S Aileron
-    6: {"pwm_min": 700,  "pwm_max": 1500}, #might be 800 and 1500, S Flap inboard
-    7: {"pwm_min": 2300,  "pwm_max": 1500}, #might be 2200 and 1500 (if limitations occur) #S Flap outboard
+    5: {"pwm_min": 2020,  "pwm_max": 1420},#S Aileron
+    6: {"pwm_min": 800,  "pwm_max": 1350}, #might be 800 and 1500, S Flap inboard
+    7: {"pwm_min": 2300,  "pwm_max": 1650}, #might be 2200 and 1500 (if limitations occur) #S Flap outboard
     8: {"pwm_min": 2500,  "pwm_max": 500}, #P Flap
 }
 
